@@ -183,13 +183,29 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center m-0">
       <div className="content">
-        <h1 className="text-center font-bold text-2xl my-4">Champions/Element Graphic Generator</h1>
+        <h1 className="text-center font-bold text-2xl my-4">Champion/Element Graphic Generator</h1>
         <div className="flex flex-col items-center">
           <div className="flex flex-col sm:flex-row gap-2 m-4">
-            <div>
+            <div className='flex flex-col gap-2'>
+              <span className='text-sm font-bold'>Champions</span>
               <Select
-                className='basic-single w-[320px] font-bold'
+                className='basic-single w-[320px] font-bold text-black'
                 classNamePrefix='select'
+                theme={(theme) => ({
+                  ...theme,
+                  borderRadius: 4,
+                  colors: {
+                    ...theme.colors,
+                    text: 'black',
+                    primary: '#9999FF',
+                  },
+                })}
+                styles={{
+                  option: provided => ({
+                    ...provided,
+                    color: 'black',
+                  }),
+                }}
                 defaultValue={championsList[0]}
                 isLoading={isLoading}
                 isSearchable={true}
@@ -201,10 +217,26 @@ export default function Home() {
                 }}
               />
             </div>
-            <div>
+            <div className='flex flex-col gap-2'>
+              <span className='text-sm font-bold'>Elements</span>
               <Select
-                className='basic-single w-[320px] font-bold'
+                className='basic-single w-[320px] font-bold text-black'
                 classNamePrefix='select'
+                theme={(theme) => ({
+                  ...theme,
+                  borderRadius: 4,
+                  colors: {
+                    ...theme.colors,
+                    text: 'black',
+                    primary: '#9999FF',
+                  },
+                })}
+                styles={{
+                  option: provided => ({
+                    ...provided,
+                    color: 'black',
+                  }),
+                }}
                 defaultValue={elementsList[0]}
                 isLoading={isLoading}
                 isSearchable={true}
@@ -220,7 +252,7 @@ export default function Home() {
           <div className='flex flex-col items-center'>
             <canvas className='' ref={canvasRef} width={350} height={350} />
             <button 
-              className='border-solid border border-black rounded font-bold p-2 m-4 hover:border-violet-600 hover:text-violet-600 hover:shadow-lg'
+              className='border-solid border border-black rounded font-bold p-2 m-4 hover:border-violet-400 hover:text-violet-400 hover:shadow-lg'
               onClick={downloadCanvas}
               >
               Download PNG
@@ -231,7 +263,7 @@ export default function Home() {
         </div>
       </div>
       <div className="sm:absolute bottom-0 text-center">
-        <span>Please report any bugs to <b>number.four</b> on Discord.</span>
+        <span>Please report any bugs to <b className='text-violet-400'>number.four</b> on Discord.</span>
       </div>
     </main>
   )
