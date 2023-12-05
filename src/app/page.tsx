@@ -1,112 +1,237 @@
-import Image from 'next/image'
+'use client'
+
+import React from 'react'
+
+import axios from 'axios'
+import Select from 'react-select'
+
+class Champion {
+  label: string;
+  value: string;
+
+  constructor(label: string, value: string) {
+    this.label = label;
+    this.value = value;
+  }
+
+  getName() {
+    return this.label;
+  }
+
+  getSlug() {
+    return this.value;
+  }
+}
 
 export default function Home() {
+  const [isLoading, setIsLoading] = React.useState<boolean>(true);
+  const [championsList, setChampionsList] = React.useState([] as Champion[]);
+  const [elementsList, setElementsList] = React.useState([] as Champion[]);
+  const [selectedChampion, setSelectedChampion] = React.useState<string>('');
+  const [selectedElement, setSelectedElement] = React.useState<string>('');
+  const [imageUri1, setImageUri1] = React.useState<string>('https://d2alzja70szp8g.cloudfront.net/lorraine-wandering-warrior-doa-alter.png');
+  const [imageUri2, setImageUri2] = React.useState<string>('https://d2alzja70szp8g.cloudfront.net/lost-spirit-demo22.png');
+
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+  const fetchData = async() => {
+    try {
+      let championsList : Champion[] = [];
+      let elementsList : Champion[] = [];
+      let response = await axios.get('api/fetchCards');
+      let data = response.data.data['data'];
+
+      for(let i = 0; i < data.length; i++) {
+        let cardName : string = data[i]['name'];
+        let cardSlug : string = data[i]['result_editions'][0]['slug'];
+        let cardLevel : string = data[i]['level'];
+        let cardRarity : number = data[i]['result_editions'][0]['rarity'];
+
+        // Removes prize cards from list
+        if(cardRarity < 8) {
+          if(cardLevel == '0') {
+            elementsList.push(new Champion(cardName, cardSlug));
+          }
+          else {
+            championsList.push(new Champion(cardName, cardSlug));
+          }
+        }
+      }
+      if(isLoading) {
+        setChampionsList(championsList);
+        setElementsList(elementsList);
+
+        // Set initial states
+        setSelectedChampion(addUnderscore(championsList[0].getName()));
+        setSelectedElement(addUnderscore(elementsList[0].getName()));
+        setImageUri1(await generateImageUri(championsList[0].getSlug()));
+        setImageUri2(await generateImageUri(elementsList[0].getSlug()));
+
+        setIsLoading(false);
+      }
+    }
+    catch(error : any) {
+      console.error('Failed to fetch card data from api.gatcg.com: ' + error);
+    }
+  }
+
+  function addUnderscore(name : string) {
+    return name.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,'').split(' ').join('_');
+  }
+
+  function checkImageUri(cardName: string): Promise<string> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = function () {
+        resolve(`https://d2alzja70szp8g.cloudfront.net/${cardName}.png`);
+      };
+  
+      img.onerror = function () {
+        resolve(`https://ga-index-public.s3.us-west-2.amazonaws.com/cards/${cardName}.jpg`);
+      };
+  
+      img.src = `https://d2alzja70szp8g.cloudfront.net/${cardName}.png`;
+    });
+  }
+  
+  async function generateImageUri(selectedOptionSlug: string): Promise<string> {
+    try {
+      const validUri = await checkImageUri(selectedOptionSlug);
+      return validUri;
+    } catch (error) {
+      console.error("Error generating image URI:", error);
+      return ''; // Handle the error appropriately or throw it if needed
+    }
+  }
+
+  function downloadCanvas() {
+    console.log(`Generated file ${selectedChampion}-${selectedElement}.png`);
+    const dataUrl = canvasRef.current!.toDataURL('image/png');
+
+    const downloadLink = document.createElement('a');
+    downloadLink.href = dataUrl;
+    downloadLink.download = `${selectedChampion}-${selectedElement}.png`;
+    
+
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+  }
+
+  React.useEffect(() => {
+    if(isLoading) {
+      fetchData();
+    }
+  }, []);
+
+  React.useEffect(() => {
+    // Draw on canvas
+    const canvas = canvasRef.current;
+    if(!canvas) return;
+
+    const context = canvas.getContext('2d');
+
+    const image1 = new Image();
+    image1.crossOrigin = 'anonymous';
+    image1.src = imageUri1;
+    image1.onload = () => {
+      const image2 = new Image();
+      image2.crossOrigin = 'anonymous';
+      image2.src = imageUri2;
+      image2.onload = () => {
+        // Clip original images
+        context!.save();
+
+        context!.beginPath();
+        context!.moveTo(0, 0);
+        context!.lineTo(350, 0);
+        context!.lineTo(0, 350);
+        context!.closePath();
+        context!.clip();
+
+        context!.drawImage(image1, 72, 72, 350, 350, 0, 0, 350, 350);
+
+        context!.restore();
+
+        context!.save();
+
+        context!.beginPath();
+        context!.moveTo(0, 350);
+        context!.lineTo(350, 0);
+        context!.lineTo(350, 350);
+        context!.closePath();
+        context!.clip();
+
+        context!.drawImage(image2, 72, 72, 350, 350, 0, 0, 350, 350);
+
+        context!.restore();
+
+        // Create new image
+        const pattern1 = context!.createPattern(canvas, 'no-repeat');
+        const pattern2 = context!.createPattern(canvas, 'no-repeat');
+
+        // Draw patterns on the canvas
+        context!.fillStyle = pattern1!;
+        context!.fillRect(0, 0, 350, 350);
+
+        context!.fillStyle = pattern2!;
+        context!.fillRect(0, 350, 350, 350);
+      }
+    }
+  }, [imageUri1, imageUri2]);
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <main className="flex min-h-screen flex-col items-center m-0">
+      <div className="content">
+        <h1 className="text-center font-bold text-2xl my-4">Champions/Element Graphic Generator</h1>
+        <div className="flex flex-col items-center">
+          <div className="flex flex-col sm:flex-row gap-2 m-4">
+            <div>
+              <Select
+                className='basic-single w-[320px] font-bold'
+                classNamePrefix='select'
+                defaultValue={championsList[0]}
+                isLoading={isLoading}
+                isSearchable={true}
+                name='Champion'
+                options={championsList}
+                onChange={async (selectedOption) => {
+                  setSelectedChampion(addUnderscore(selectedOption!.getName()));
+                  setImageUri1(await generateImageUri(selectedOption!.getSlug()));
+                }}
+              />
+            </div>
+            <div>
+              <Select
+                className='basic-single w-[320px] font-bold'
+                classNamePrefix='select'
+                defaultValue={elementsList[0]}
+                isLoading={isLoading}
+                isSearchable={true}
+                name='Element'
+                options={elementsList}
+                onChange={async (selectedOption) => {
+                  setSelectedElement(addUnderscore(selectedOption!.getName()));
+                  setImageUri2(await generateImageUri(selectedOption!.getSlug()));
+                }}
+              />
+            </div>
+          </div>
+          <div className='flex flex-col items-center'>
+            <canvas className='' ref={canvasRef} width={350} height={350} />
+            <button 
+              className='border-solid border border-black rounded font-bold p-2 m-4 hover:border-violet-600 hover:text-violet-600 hover:shadow-lg'
+              onClick={downloadCanvas}
+              >
+              Download PNG
+            </button>
+            <p className="m-2 text-center">If the button isn&apos;t working for whatever reason, you can right click the image and save it that way.</p>
+            <p className="m-2 text-center">All card artworks displayed are copyright &copy;Weebs of the Shore.</p>
+          </div>
         </div>
       </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+      <div className="sm:absolute bottom-0 text-center">
+        <span>Please report any bugs to <b>number.four</b> on Discord.</span>
       </div>
     </main>
   )
