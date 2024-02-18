@@ -186,68 +186,75 @@ export default function Home() {
         <h1 className="text-center font-bold text-2xl my-4">Champion/Element Graphic Generator</h1>
         <div className="flex flex-col items-center">
           <div className="flex flex-col sm:flex-row gap-2 m-4">
-            <div className='flex flex-col gap-2'>
-              <span className='text-sm font-bold'>Champions</span>
-              <Select
-                className='basic-single w-[320px] font-bold text-black'
-                classNamePrefix='select'
-                theme={(theme) => ({
-                  ...theme,
-                  borderRadius: 4,
-                  colors: {
-                    ...theme.colors,
-                    text: 'black',
-                    primary: '#9999FF',
-                  },
-                })}
-                styles={{
-                  option: provided => ({
-                    ...provided,
-                    color: 'black',
-                  }),
-                }}
-                defaultValue={championsList[0]}
-                isLoading={isLoading}
-                isSearchable={true}
-                name='Champion'
-                options={championsList}
-                onChange={async (selectedOption) => {
-                  setSelectedChampion(addUnderscore(selectedOption!.getName()));
-                  setImageUri1(await generateImageUri(selectedOption!.getSlug()));
-                }}
-              />
-            </div>
-            <div className='flex flex-col gap-2'>
-              <span className='text-sm font-bold'>Elements</span>
-              <Select
-                className='basic-single w-[320px] font-bold text-black'
-                classNamePrefix='select'
-                theme={(theme) => ({
-                  ...theme,
-                  borderRadius: 4,
-                  colors: {
-                    ...theme.colors,
-                    text: 'black',
-                    primary: '#9999FF',
-                  },
-                })}
-                styles={{
-                  option: provided => ({
-                    ...provided,
-                    color: 'black',
-                  }),
-                }}
-                defaultValue={elementsList[0]}
-                isLoading={isLoading}
-                isSearchable={true}
-                name='Element'
-                options={elementsList}
-                onChange={async (selectedOption) => {
-                  setSelectedElement(addUnderscore(selectedOption!.getName()));
-                  setImageUri2(await generateImageUri(selectedOption!.getSlug()));
-                }}
-              />
-            </div>
+            {championsList.length == 0 && 
+              <span className='text-2xl font-bold text-violet-400'>Loading...</span>
+            }
+            {championsList.length > 0 && elementsList.length > 0 && 
+              <>
+                <div className='flex flex-col gap-2'>
+                <span className='text-sm font-bold'>Champions</span>
+                <Select
+                  className='basic-single w-[320px] font-bold text-black'
+                  classNamePrefix='select'
+                  theme={(theme) => ({
+                    ...theme,
+                    borderRadius: 4,
+                    colors: {
+                      ...theme.colors,
+                      text: 'black',
+                      primary: '#9999FF',
+                    },
+                  })}
+                  styles={{
+                    option: provided => ({
+                      ...provided,
+                      color: 'black',
+                    }),
+                  }}
+                  defaultValue={championsList[0]}
+                  isLoading={isLoading}
+                  isSearchable={true}
+                  name='Champion'
+                  options={championsList}
+                  onChange={async (selectedOption) => {
+                    setSelectedChampion(addUnderscore(selectedOption!.getName()));
+                    setImageUri1(await generateImageUri(selectedOption!.getSlug()));
+                  }}
+                />
+                </div>
+                <div className='flex flex-col gap-2'>
+                  <span className='text-sm font-bold'>Elements</span>
+                  <Select
+                    className='basic-single w-[320px] font-bold text-black'
+                    classNamePrefix='select'
+                    theme={(theme) => ({
+                      ...theme,
+                      borderRadius: 4,
+                      colors: {
+                        ...theme.colors,
+                        text: 'black',
+                        primary: '#9999FF',
+                      },
+                    })}
+                    styles={{
+                      option: provided => ({
+                        ...provided,
+                        color: 'black',
+                      }),
+                    }}
+                    defaultValue={elementsList[0]}
+                    isLoading={isLoading}
+                    isSearchable={true}
+                    name='Element'
+                    options={elementsList}
+                    onChange={async (selectedOption) => {
+                      setSelectedElement(addUnderscore(selectedOption!.getName()));
+                      setImageUri2(await generateImageUri(selectedOption!.getSlug()));
+                    }}
+                  />
+                </div>
+              </>
+            }
           </div>
           <div className='flex flex-col items-center'>
             <canvas className='' ref={canvasRef} width={350} height={350} />
