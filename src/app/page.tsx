@@ -39,7 +39,7 @@ export default function Home() {
       let championsList : Champion[] = [];
       let elementsList : Champion[] = [];
       let response = await axios.get('api/fetchCards');
-      let data = response.data.data['data'];
+      let data = response.data.data;
 
       for(let i = 0; i < data.length; i++) {
         let cardName : string = data[i]['name'];
