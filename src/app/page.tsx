@@ -1,17 +1,18 @@
 'use client'
 
 import React from 'react'
-
-import axios from 'axios'
 import Select from 'react-select'
+import axios from 'axios';
 
 class Champion {
   label: string;
   value: string;
+  imagePath: string;
 
-  constructor(label: string, value: string) {
+  constructor(label: string, value: string, imagePath: string) {
     this.label = label;
     this.value = value;
+    this.imagePath = imagePath;
   }
 
   getName() {
@@ -20,6 +21,10 @@ class Champion {
 
   getSlug() {
     return this.value;
+  }
+
+  getImagePath() {
+    return this.imagePath;
   }
 }
 
@@ -38,25 +43,29 @@ export default function Home() {
     try {
       let championsList : Champion[] = [];
       let elementsList : Champion[] = [];
+      
       let response = await axios.get('api/fetchCards');
-      let data = response.data.data;
+      let allChampions = response.data.data;
 
-      for(let i = 0; i < data.length; i++) {
-        let cardName : string = data[i]['name'];
-        let cardSlug : string = data[i]['result_editions'][0]['slug'];
-        let cardLevel : string = data[i]['level'];
-        let cardRarity : number = data[i]['result_editions'][0]['rarity'];
+      allChampions?.forEach((champion: Record<string, unknown>) => {
+        let cardEditions: Record<string, unknown>[] = champion.editions as Record<string, unknown>[];
+        let cardName: string = champion.name as string;
+        let cardSlug: string = cardEditions[0].slug as string;
+        let cardLevel: string = champion.level as string;
+        let cardRarity: number = cardEditions[0].rarity as number ?? 0;
+        let cardImagePath: string = cardEditions[0].image as string;
 
         // Removes prize cards from list
         if(cardRarity < 8) {
           if(cardLevel == '0') {
-            elementsList.push(new Champion(cardName, cardSlug));
+            elementsList.push(new Champion(cardName, cardSlug, cardImagePath));
           }
-          else {
-            championsList.push(new Champion(cardName, cardSlug));
+          else if(cardName != 'Nameless Champion') {
+            championsList.push(new Champion(cardName, cardSlug, cardImagePath));
           }
         }
-      }
+      });
+
       if(isLoading) {
         setChampionsList(championsList);
         setElementsList(elementsList);
@@ -64,8 +73,8 @@ export default function Home() {
         // Set initial states
         setSelectedChampion(addUnderscore(championsList[0].getName()));
         setSelectedElement(addUnderscore(elementsList[0].getName()));
-        setImageUri1(await generateImageUri(championsList[0].getSlug()));
-        setImageUri2(await generateImageUri(elementsList[0].getSlug()));
+        setImageUri1(await generateImageUri(championsList[0].getImagePath()));
+        setImageUri2(await generateImageUri(elementsList[0].getImagePath()));
 
         setIsLoading(false);
       }
@@ -79,28 +88,38 @@ export default function Home() {
     return name.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,'').split(' ').join('_');
   }
 
-  function checkImageUri(cardName: string): Promise<string> {
+  function checkImageUri(cardImagePath: string): Promise<string> {
     return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = function () {
-        resolve(`https://d2alzja70szp8g.cloudfront.net/${cardName}.png`);
-      };
-  
-      img.onerror = function () {
-        resolve(`https://ga-index-public.s3.us-west-2.amazonaws.com/cards/${cardName}.jpg`);
-      };
-  
-      img.src = `https://d2alzja70szp8g.cloudfront.net/${cardName}.png`;
+        const img = new Image();
+        img.onload = function () {
+            resolve(`https://api.gatcg.com${cardImagePath}?rounded=true`);
+        };
+ 
+        img.onerror = function () {
+            const fallbackImg = new Image();
+            fallbackImg.onload = function() {
+                resolve(`https://api.gatcg.com${cardImagePath}?rounded=true`);
+            }
+           
+            fallbackImg.onerror = function () {
+                resolve(`https://api.gatcg.com${cardImagePath}`);
+            }
+            
+            fallbackImg.src = `https://api.gatcg.com${cardImagePath}`;
+        };
+ 
+        img.src = `https://api.gatcg.com${cardImagePath}?rounded=true`;
     });
   }
   
-  async function generateImageUri(selectedOptionSlug: string): Promise<string> {
+  async function generateImageUri(selectedOptionImagePath: string): Promise<string> {
     try {
-      const validUri = await checkImageUri(selectedOptionSlug);
+      const validUri = await checkImageUri(selectedOptionImagePath);
       return validUri;
-    } catch (error) {
+    } 
+    catch (error) {
       console.error("Error generating image URI:", error);
-      return ''; // Handle the error appropriately or throw it if needed
+      return '';
     }
   }
 
@@ -218,7 +237,7 @@ export default function Home() {
                   options={championsList}
                   onChange={async (selectedOption) => {
                     setSelectedChampion(addUnderscore(selectedOption!.getName()));
-                    setImageUri1(await generateImageUri(selectedOption!.getSlug()));
+                    setImageUri1(await generateImageUri(selectedOption!.getImagePath()));
                   }}
                 />
                 </div>
@@ -249,7 +268,7 @@ export default function Home() {
                     options={elementsList}
                     onChange={async (selectedOption) => {
                       setSelectedElement(addUnderscore(selectedOption!.getName()));
-                      setImageUri2(await generateImageUri(selectedOption!.getSlug()));
+                      setImageUri2(await generateImageUri(selectedOption!.getImagePath()));
                     }}
                   />
                 </div>

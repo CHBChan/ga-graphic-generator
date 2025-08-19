@@ -4,7 +4,7 @@ import axios from "axios";
 export async function GET(req: NextRequest, res: NextResponse) {
     
     try {
-        const response = await axios.get('https://api.gatcg.com/cards/search?type=CHAMPION');
+        const response = await axios.get('https://api.gatcg.com/cards/search?page_size=50&sort=rarity&type=CHAMPION');
         const data : any = response.data;
 
         let list : any = data['data'];
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest, res: NextResponse) {
         // If more than 1 page
         if(total_pages > 1) {
             for(let i = 2; i <= total_pages; i++) {
-                const pageResponse = await axios.get(`https://api.gatcg.com/cards/search?type=CHAMPION&page=${i}`);
+                const pageResponse = await axios.get(`https://api.gatcg.com/cards/search?page=${i}&page_size=50&sort=rarity&type=CHAMPION`);
                 const pageData : any = pageResponse.data;
 
                 // Concat additional cards to list
