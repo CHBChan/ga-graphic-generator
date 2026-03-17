@@ -1,6 +1,6 @@
 This project is a free-to-use web app that generates a basic champion/element image for graphical purposes.
 
-Latest set: MRC
+Latest set: PTM
 
 ## Frameworks / Libraries used in the project
 [React.js](https://react.dev/)
